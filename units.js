@@ -7,15 +7,13 @@
  * not a bulb.
  */
 
-type Family = { id: string; base: string; units: Record<string, number> };
-
-const MASS: Family = {
+const MASS = {
   id: "mass",
   base: "g",
   units: { g: 1, kg: 1000, oz: 28.3495, lb: 453.592 },
 };
 
-const VOLUME: Family = {
+const VOLUME = {
   id: "volume",
   base: "ml",
   units: { ml: 1, l: 1000, tsp: 4.92892, tbsp: 14.7868, cup: 236.588 },
@@ -24,26 +22,27 @@ const VOLUME: Family = {
 /** Spoon/cup units read better as fractions than as millilitres. */
 const SPOONS = new Set(["tsp", "tbsp", "cup"]);
 
-export function normalizeUnit(unit: string): string {
-  const u = (unit || "").trim().toLowerCase();
-  const aliases: Record<string, string> = {
-    gram: "g", grams: "g", gr: "g",
-    kilogram: "kg", kilograms: "kg",
-    ounce: "oz", ounces: "oz",
-    pound: "lb", pounds: "lb", lbs: "lb",
-    milliliter: "ml", millilitre: "ml", milliliters: "ml",
-    liter: "l", litre: "l", liters: "l", litres: "l",
-    teaspoon: "tsp", teaspoons: "tsp",
-    tablespoon: "tbsp", tablespoons: "tbsp",
-    cups: "cup",
-    cloves: "clove", slices: "slice", stalks: "stalk",
-    bunches: "bunch", cans: "can", sprigs: "sprig",
-    ea: "", each: "", count: "", "": "",
-  };
-  return aliases[u] ?? u;
+const ALIASES = {
+  gram: "g", grams: "g", gr: "g",
+  kilogram: "kg", kilograms: "kg",
+  ounce: "oz", ounces: "oz",
+  pound: "lb", pounds: "lb", lbs: "lb",
+  milliliter: "ml", millilitre: "ml", milliliters: "ml",
+  liter: "l", litre: "l", liters: "l", litres: "l",
+  teaspoon: "tsp", teaspoons: "tsp",
+  tablespoon: "tbsp", tablespoons: "tbsp",
+  cups: "cup",
+  cloves: "clove", slices: "slice", stalks: "stalk",
+  bunches: "bunch", cans: "can", sprigs: "sprig",
+  ea: "", each: "", count: "", "": "",
+};
+
+export function normalizeUnit(unit) {
+  const u = String(unit || "").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(ALIASES, u) ? ALIASES[u] : u;
 }
 
-export function familyOf(unit: string): string {
+export function familyOf(unit) {
   const u = normalizeUnit(unit);
   if (u in MASS.units) return MASS.id;
   if (u in VOLUME.units) return VOLUME.id;
@@ -51,20 +50,20 @@ export function familyOf(unit: string): string {
 }
 
 /** Convert a measurement into its family's base unit. */
-export function toBase(quantity: number, unit: string): number {
+export function toBase(quantity, unit) {
   const u = normalizeUnit(unit);
   if (u in MASS.units) return quantity * MASS.units[u];
   if (u in VOLUME.units) return quantity * VOLUME.units[u];
   return quantity; // countables are already their own base
 }
 
-const VULGAR: Array<[number, string]> = [
+const VULGAR = [
   [0.125, "⅛"], [0.25, "¼"], [0.333, "⅓"], [0.375, "⅜"], [0.5, "½"],
   [0.625, "⅝"], [0.667, "⅔"], [0.75, "¾"], [0.875, "⅞"],
 ];
 
 /** Render a number cooks can actually follow: 1.5 -> "1½", 0.25 -> "¼". */
-export function prettyNumber(value: number, allowFractions: boolean): string {
+export function prettyNumber(value, allowFractions) {
   if (!allowFractions || value >= 10) {
     const rounded = Math.round(value * 10) / 10;
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
@@ -85,9 +84,12 @@ export function prettyNumber(value: number, allowFractions: boolean): string {
   return whole === 0 ? best : `${whole}${best}`;
 }
 
-function pluralize(unit: string, value: number): string {
+/** Abbreviations stay invariant: "2 tsp", never "2 tsps". */
+const INVARIANT = new Set(["tsp", "tbsp", "g", "kg", "ml", "l", "oz", "lb"]);
+
+function pluralize(unit, value) {
   if (!unit) return "";
-  if (value === 1) return unit;
+  if (value === 1 || INVARIANT.has(unit)) return unit;
   if (/(s|x|ch|sh)$/.test(unit)) return `${unit}es`;
   return `${unit}s`;
 }
@@ -97,11 +99,7 @@ function pluralize(unit: string, value: number): string {
  * `usedUnits` are the units the recipes actually called for, which decides
  * whether a volume shows up as tablespoons or as millilitres.
  */
-export function formatTotal(
-  totalBase: number,
-  family: string,
-  usedUnits: Set<string>,
-): { quantity: number; unit: string; display: string } {
+export function formatTotal(totalBase, family, usedUnits) {
   if (family === MASS.id) {
     if (totalBase >= 1000) {
       const kg = totalBase / 1000;
@@ -114,7 +112,7 @@ export function formatTotal(
   if (family === VOLUME.id) {
     const allSpoons = [...usedUnits].every((u) => SPOONS.has(u));
     if (allSpoons) {
-      for (const unit of ["cup", "tbsp", "tsp"] as const) {
+      for (const unit of ["cup", "tbsp", "tsp"]) {
         const value = totalBase / VOLUME.units[unit];
         if (value >= 0.95 || unit === "tsp") {
           return {
@@ -133,13 +131,14 @@ export function formatTotal(
     return { quantity: ml, unit: "ml", display: `${ml} ml` };
   }
 
-  // Countable: "3 cloves", "12" (bare count), "1½ bunches"
+  // Countable: "3 cloves", "12" (bare count).
+  // Scaling servings can land on 6.67 eggs, but you buy whole eggs — round up,
+  // with an epsilon so 2.0000001 doesn't become 3.
   const unit = family.slice("count:".length).replace(/^ea$/, "");
-  const value = Math.round(totalBase * 100) / 100;
-  const num = prettyNumber(value, true);
+  const value = Math.max(1, Math.ceil(totalBase - 1e-6));
   return {
     quantity: value,
     unit,
-    display: unit ? `${num} ${pluralize(unit, value)}` : num,
+    display: unit ? `${value} ${pluralize(unit, value)}` : String(value),
   };
 }

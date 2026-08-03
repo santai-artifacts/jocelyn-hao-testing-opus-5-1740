@@ -16,22 +16,13 @@ export const AISLES = [
   "Pantry",
   "Spices & Herbs",
   "Beverages",
-] as const;
+];
 
-export type SeedIngredient = [string, number, string, string];
-
-export type SeedRecipe = {
-  name: string;
-  emoji: string;
-  slots: string; // comma-separated: breakfast, lunch, dinner
-  servings: number;
-  minutes: number;
-  tags: string;
-  description: string;
-  ingredients: SeedIngredient[];
-};
-
-export const RECIPES: SeedRecipe[] = [
+/**
+ * Each recipe: { name, emoji, slots (comma-separated breakfast|lunch|dinner),
+ * servings, minutes, tags, description, ingredients }
+ */
+export const RECIPES = [
   {
     name: "Greek Yogurt Berry Bowl",
     emoji: "🫐",

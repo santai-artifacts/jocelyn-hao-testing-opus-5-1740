@@ -1,14 +1,29 @@
-import { Database } from "bun:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { RECIPES } from "./recipes";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { RECIPES } from "./recipes.js";
 
-const dbPath = process.env.DATABASE_URL || `${import.meta.dir}/data/app.db`;
+const here = dirname(fileURLToPath(import.meta.url));
+const dbPath = process.env.DATABASE_URL || join(here, "data", "app.db");
 mkdirSync(dirname(dbPath), { recursive: true });
 
-const db = new Database(dbPath, { create: true });
+const db = new DatabaseSync(dbPath);
 db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
+
+/** node:sqlite has no transaction helper, so wrap one by hand. */
+export function tx(fn) {
+  db.exec("BEGIN");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch { /* nothing to roll back */ }
+    throw err;
+  }
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS recipes (
@@ -67,9 +82,9 @@ const SEED_VERSION = "1";
 
 function seed() {
   const current = db
-    .query<{ value: string }, []>("SELECT value FROM meta WHERE key = 'seed_version'")
+    .prepare("SELECT value FROM meta WHERE key = 'seed_version'")
     .get();
-  if (current?.value === SEED_VERSION) return;
+  if (current && current.value === SEED_VERSION) return;
 
   const insertRecipe = db.prepare(
     `INSERT INTO recipes (name, emoji, slots, servings, minutes, tags, description)
@@ -83,21 +98,22 @@ function seed() {
   const insertIngredient = db.prepare(
     "INSERT INTO ingredients (recipe_id, name, quantity, unit, aisle) VALUES (?, ?, ?, ?, ?)",
   );
+  const setMeta = db.prepare(
+    "INSERT OR REPLACE INTO meta (key, value) VALUES ('seed_version', ?)",
+  );
 
-  db.transaction(() => {
+  tx(() => {
     for (const r of RECIPES) {
       const row = insertRecipe.get(
         r.name, r.emoji, r.slots, r.servings, r.minutes, r.tags, r.description,
-      ) as { id: number };
+      );
       clearIngredients.run(row.id);
       for (const [name, quantity, unit, aisle] of r.ingredients) {
         insertIngredient.run(row.id, name, quantity, unit, aisle);
       }
     }
-    db.query("INSERT OR REPLACE INTO meta (key, value) VALUES ('seed_version', ?)").run(
-      SEED_VERSION,
-    );
-  })();
+    setMeta.run(SEED_VERSION);
+  });
 }
 
 seed();
