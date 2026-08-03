@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mise · Weekly Meal Planner</title>
+<meta name="description" content="Plan a week of meals and export an aisle-sorted shopping list.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍲</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#planner">Skip to planner</a>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true">🍲</span>
+      <div>
+        <h1 class="brand__name">Mise</h1>
+        <p class="brand__tag">Plan the week, shop once</p>
+      </div>
+    </div>
+
+    <div class="weeknav" role="group" aria-label="Week navigation">
+      <button class="iconbtn" id="prevWeek" aria-label="Previous week">‹</button>
+      <div class="weeknav__label">
+        <strong id="weekLabel">—</strong>
+        <button class="weeknav__today" id="thisWeek">Today</button>
+      </div>
+      <button class="iconbtn" id="nextWeek" aria-label="Next week">›</button>
+    </div>
+
+    <div class="topbar__actions">
+      <button class="btn btn--ghost" id="autofillBtn">
+        <span aria-hidden="true">✨</span> Surprise me
+      </button>
+      <button class="btn btn--primary" id="listBtn" aria-expanded="false" aria-controls="drawer">
+        <span aria-hidden="true">🧺</span> Shopping list
+        <span class="pill" id="listCount">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="holdbar" id="holdbar" hidden>
+  <span><strong id="holdName"></strong> is ready — tap any slot to place it.</span>
+  <button class="btn btn--tiny" id="holdCancel">Cancel</button>
+</div>
+
+<main class="layout">
+  <section class="planner" id="planner" aria-label="Weekly plan">
+    <div class="planner__head">
+      <h2>This week's meals</h2>
+      <div class="planner__meta">
+        <span id="planSummary">No meals planned yet</span>
+        <div class="planner__tools">
+          <label class="servings-default">
+            Default servings
+            <input type="number" id="defaultServings" min="1" max="12" value="2" inputmode="numeric">
+          </label>
+          <button class="btn btn--ghost btn--tiny" id="copyLastWeek">Copy last week</button>
+          <button class="btn btn--ghost btn--tiny btn--danger" id="clearWeek">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="week" id="week"></div>
+  </section>
+
+  <aside class="library" aria-label="Recipe library">
+    <div class="library__head">
+      <h2>Recipes</h2>
+      <p class="hint">Drag onto a day, or tap to pick up.</p>
+      <div class="search">
+        <span class="search__icon" aria-hidden="true">⌕</span>
+        <input type="search" id="search" placeholder="Search recipes or ingredients" aria-label="Search recipes">
+      </div>
+      <div class="chips" id="filters" role="group" aria-label="Filter by meal"></div>
+    </div>
+    <div class="library__list" id="recipeList"></div>
+  </aside>
+</main>
+
+<!-- Shopping list drawer -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Shopping list" aria-hidden="true" hidden>
+  <header class="drawer__head">
+    <div>
+      <h2>Shopping list</h2>
+      <p class="drawer__sub" id="drawerSub">—</p>
+    </div>
+    <button class="iconbtn" id="drawerClose" aria-label="Close shopping list">✕</button>
+  </header>
+
+  <div class="drawer__progress" id="progressWrap" hidden>
+    <div class="bar"><div class="bar__fill" id="progressFill"></div></div>
+    <span id="progressText"></span>
+  </div>
+
+  <div class="drawer__body" id="listBody"></div>
+
+  <footer class="drawer__foot">
+    <div class="export">
+      <button class="btn btn--primary" id="copyList"><span aria-hidden="true">⧉</span> Copy</button>
+      <button class="btn btn--ghost" data-export="txt">.txt</button>
+      <button class="btn btn--ghost" data-export="csv">.csv</button>
+      <button class="btn btn--ghost" data-export="md">Plan .md</button>
+      <button class="btn btn--ghost" id="printList"><span aria-hidden="true">⎙</span> Print</button>
+    </div>
+    <button class="linkbtn" id="resetChecks">Uncheck everything</button>
+  </footer>
+</aside>
+
+<!-- Recipe picker -->
+<dialog class="picker" id="picker" aria-label="Choose a recipe">
+  <header class="picker__head">
+    <h2 id="pickerTitle">Add a meal</h2>
+    <button class="iconbtn" id="pickerClose" aria-label="Close">✕</button>
+  </header>
+  <div class="search search--flush">
+    <span class="search__icon" aria-hidden="true">⌕</span>
+    <input type="search" id="pickerSearch" placeholder="Search recipes" aria-label="Search recipes">
+  </div>
+  <div class="picker__list" id="pickerList"></div>
+</dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<!-- Print-only shopping list; the app UI is hidden when printing. -->
+<div class="printout" id="printout" aria-hidden="true"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

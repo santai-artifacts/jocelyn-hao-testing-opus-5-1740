@@ -1,0 +1,9 @@
+{
+  "name": "mise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Weekly meal planner with aisle-sorted shopping list export",
+  "scripts": {
+    "start": "bun run index.ts"
+  }
+}
