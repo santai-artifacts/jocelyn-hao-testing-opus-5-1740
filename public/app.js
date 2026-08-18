@@ -389,9 +389,7 @@ function renderPicker() {
     return;
   }
   for (const recipe of pool) {
-    if (!(recipe.id in servingsMap)) {
-      servingsMap[recipe.id] = state.defaultServings || 2;
-    }
+    if (!(recipe.id in servingsMap)) servingsMap[recipe.id] = 1;
 
     const row = document.createElement("div");
     row.className = "picker-row";
