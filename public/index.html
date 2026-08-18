@@ -72,7 +72,7 @@
   <aside class="library" aria-label="Recipe library">
     <div class="library__head">
       <h2>Recipes</h2>
-      <p class="hint">Drag onto a day, or tap to pick up.</p>
+      <p class="hint">Drag onto a day, or tap to view &amp; add.</p>
       <div class="search">
         <span class="search__icon" aria-hidden="true">⌕</span>
         <input type="search" id="search" placeholder="Search recipes or ingredients" aria-label="Search recipes">
@@ -112,6 +112,38 @@
     <button class="linkbtn" id="resetChecks">Uncheck everything</button>
   </footer>
 </aside>
+
+<!-- Recipe detail -->
+<dialog class="rdetail" id="rdetail" aria-label="Recipe detail">
+  <header class="rdetail__head">
+    <button class="iconbtn" id="rdetailClose" aria-label="Close">✕</button>
+  </header>
+  <div class="rdetail__scroll">
+    <div class="rdetail__hero">
+      <span class="rdetail__emoji" id="rdetailEmoji" aria-hidden="true"></span>
+      <div class="rdetail__intro">
+        <h2 id="rdetailName"></h2>
+        <p id="rdetailDesc"></p>
+      </div>
+    </div>
+    <div class="rdetail__chips" id="rdetailChips"></div>
+    <div class="rdetail__ings" id="rdetailIngs"></div>
+  </div>
+  <footer class="rdetail__foot">
+    <div class="rdetail__scale">
+      <span>Servings</span>
+      <div class="stepper">
+        <button type="button" id="rdetailMinus">−</button>
+        <span id="rdetailServings">2</span>
+        <button type="button" id="rdetailPlus">+</button>
+      </div>
+    </div>
+    <div class="rdetail__btns">
+      <button class="btn btn--ghost" id="rdetailPlan">Add to plan</button>
+      <button class="btn btn--primary" id="rdetailShop"><span aria-hidden="true">🛒</span> Shop for this</button>
+    </div>
+  </footer>
+</dialog>
 
 <!-- Recipe picker -->
 <dialog class="picker" id="picker" aria-label="Choose a recipe">

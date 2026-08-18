@@ -15,6 +15,8 @@ const state = {
   filter: "all",
   defaultServings: 2,
   pickerTarget: null,
+  recipeDetail: null,       // recipe object open in the detail modal
+  recipeDetailServings: 2,  // current servings for detail view
 };
 
 const $ = (id) => document.getElementById(id);
@@ -256,7 +258,7 @@ function recipeCard(recipe, onPick) {
 
   card.addEventListener("click", () => {
     if (onPick) onPick(recipe);
-    else toggleHold(recipe);
+    else openRecipeDetail(recipe);
   });
   card.addEventListener("dragstart", (event) => {
     dragPayload = { type: "recipe", id: recipe.id };
@@ -274,6 +276,71 @@ function recipeCard(recipe, onPick) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function fmtQty(n) {
+  if (n === 0) return "0";
+  if (n % 1 === 0) return String(Math.round(n));
+  return n.toFixed(1).replace(/\.0$/, "");
+}
+
+/* --------------------------------------------------------- recipe detail */
+
+function openRecipeDetail(recipe) {
+  state.recipeDetail = recipe;
+  state.recipeDetailServings = state.defaultServings || recipe.servings;
+  renderRecipeDetail();
+  $("rdetail").showModal();
+}
+
+function renderRecipeDetail() {
+  const recipe = state.recipeDetail;
+  if (!recipe) return;
+  const scale = state.recipeDetailServings / (recipe.servings || 1);
+
+  $("rdetailEmoji").textContent = recipe.emoji;
+  $("rdetailName").textContent = recipe.name;
+  $("rdetailDesc").textContent = recipe.description;
+  $("rdetailServings").textContent = String(state.recipeDetailServings);
+
+  const chips = $("rdetailChips");
+  chips.replaceChildren();
+  const timeChip = document.createElement("span");
+  timeChip.className = "rdetail__chip";
+  timeChip.textContent = `⏱ ${recipe.minutes} min`;
+  chips.append(timeChip);
+  for (const tag of recipe.tags) {
+    const t = document.createElement("span");
+    t.className = "tag";
+    t.textContent = tag;
+    chips.append(t);
+  }
+
+  const byAisle = new Map();
+  for (const ing of recipe.ingredients) {
+    if (!byAisle.has(ing.aisle)) byAisle.set(ing.aisle, []);
+    byAisle.get(ing.aisle).push(ing);
+  }
+
+  const host = $("rdetailIngs");
+  host.replaceChildren();
+  for (const [aisle, items] of byAisle) {
+    const section = document.createElement("div");
+    section.className = "rdetail__aisle";
+    const head = document.createElement("div");
+    head.className = "rdetail__aisle-head";
+    head.textContent = aisle;
+    section.append(head);
+    for (const ing of items) {
+      const row = document.createElement("div");
+      row.className = "rdetail__ing";
+      const qty = ing.quantity * scale;
+      const display = ing.unit ? `${fmtQty(qty)} ${ing.unit}` : fmtQty(qty);
+      row.innerHTML = `<span>${escapeHtml(ing.label)}</span><span class="rdetail__ing-qty">${escapeHtml(display)}</span>`;
+      section.append(row);
+    }
+    host.append(section);
+  }
 }
 
 /* -------------------------------------------------------- drag, hold, drop */
@@ -451,8 +518,10 @@ function renderList() {
   $("listCount").textContent = list ? String(list.itemCount) : "0";
   if (!list) return;
 
-  $("drawerSub").textContent = list.mealCount
-    ? `${list.itemCount} items · ${list.mealCount} meals · week of ${weekRangeLabel(state.weekStart)}`
+  const qsCount = list.quickShop ? list.quickShop.length : 0;
+  const hasContent = list.mealCount || qsCount;
+  $("drawerSub").textContent = hasContent
+    ? `${list.itemCount} items · ${list.mealCount} meals${qsCount ? ` · ${qsCount} quick-shop` : ""} · week of ${weekRangeLabel(state.weekStart)}`
     : `Nothing planned for ${weekRangeLabel(state.weekStart)} yet`;
 
   const wrap = $("progressWrap");
@@ -467,10 +536,53 @@ function renderList() {
 
   host.replaceChildren();
 
+  if (list.quickShop && list.quickShop.length) {
+    const qsBox = document.createElement("div");
+    qsBox.className = "quickshop";
+    const label = document.createElement("div");
+    label.className = "quickshop__label";
+    label.textContent = "Quick shop";
+    qsBox.append(label);
+
+    for (const entry of list.quickShop) {
+      const row = document.createElement("div");
+      row.className = "quickshop__row";
+      row.innerHTML = `<span class="quickshop__emoji">${entry.emoji}</span>
+        <span class="quickshop__name">${escapeHtml(entry.name)}</span>
+        <span class="quickshop__servings">${entry.servings} serving${entry.servings === 1 ? "" : "s"}</span>`;
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "quickshop__remove";
+      rm.innerHTML = "✕";
+      rm.setAttribute("aria-label", `Remove ${entry.name} from quick shop`);
+      rm.addEventListener("click", async () => {
+        try {
+          await api(`/api/quick-shop/${entry.id}`, { method: "DELETE" });
+          await refreshList();
+        } catch (err) { toast(err.message, "warn"); }
+      });
+      row.append(rm);
+      qsBox.append(row);
+    }
+
+    const clearAll = document.createElement("button");
+    clearAll.type = "button";
+    clearAll.className = "quickshop__clear";
+    clearAll.textContent = "Clear quick shop";
+    clearAll.addEventListener("click", async () => {
+      try {
+        await api("/api/quick-shop", { method: "DELETE" });
+        await refreshList();
+      } catch (err) { toast(err.message, "warn"); }
+    });
+    qsBox.append(clearAll);
+    host.append(qsBox);
+  }
+
   if (!list.groups.length) {
     const empty = document.createElement("p");
     empty.className = "empty";
-    empty.innerHTML = list.mealCount
+    empty.innerHTML = (list.mealCount || qsCount)
       ? "Every ingredient this week is already in your pantry."
       : "Add some meals and the shopping list builds itself —<br>combined amounts, sorted by aisle.";
     host.append(empty);
@@ -802,6 +914,38 @@ function wireChrome() {
   $("holdCancel").addEventListener("click", clearHold);
   $("pickerClose").addEventListener("click", () => $("picker").close());
   $("pickerSearch").addEventListener("input", renderPicker);
+
+  $("rdetailClose").addEventListener("click", () => $("rdetail").close());
+
+  $("rdetailMinus").addEventListener("click", () => {
+    state.recipeDetailServings = Math.max(1, state.recipeDetailServings - 1);
+    renderRecipeDetail();
+  });
+  $("rdetailPlus").addEventListener("click", () => {
+    state.recipeDetailServings = Math.min(24, state.recipeDetailServings + 1);
+    renderRecipeDetail();
+  });
+
+  $("rdetailPlan").addEventListener("click", () => {
+    const recipe = state.recipeDetail;
+    $("rdetail").close();
+    toggleHold(recipe);
+  });
+
+  $("rdetailShop").addEventListener("click", async () => {
+    const recipe = state.recipeDetail;
+    const servings = state.recipeDetailServings;
+    try {
+      await api("/api/quick-shop", {
+        method: "POST",
+        body: JSON.stringify({ recipeId: recipe.id, servings }),
+      });
+      await refreshList();
+      $("rdetail").close();
+      toast(`${recipe.name} added to your shopping list`);
+      setDrawer(true);
+    } catch (err) { toast(err.message, "warn"); }
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;

@@ -76,6 +76,13 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  -- Recipes added directly to the shopping list, independent of the weekly plan.
+  CREATE TABLE IF NOT EXISTS quick_shop (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipe_id INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+    servings INTEGER NOT NULL DEFAULT 2
+  );
 `);
 
 const SEED_VERSION = "1";

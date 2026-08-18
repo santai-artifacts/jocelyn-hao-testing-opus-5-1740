@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Weekly meal planner with aisle-sorted shopping list export",
+  "description": "Weekly meal planner with recipe detail view, quick shop, and aisle-sorted shopping list export",
   "engines": {
     "node": ">=22.5.0"
   },
