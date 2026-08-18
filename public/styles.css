@@ -599,8 +599,7 @@ body.is-holding .addslot {
 .picker-qty {
   display: inline-flex; align-items: center; flex: 0 0 auto;
   border: 1px solid var(--line-2); border-radius: 999px;
-  background: var(--surface); overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  background: var(--surface); overflow: hidden; box-shadow: var(--shadow-sm);
 }
 .picker-qty button {
   width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer;
@@ -656,6 +655,61 @@ body.is-holding .addslot {
   .printout li b { font-weight: 700; }
   .printout .box { display: inline-block; width: 3.2mm; height: 3.2mm; border: 1px solid #000; margin-right: 2.5mm; vertical-align: -.2mm; }
 }
+
+/* =========================================================== theme toggle */
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #16191a;
+  --paper-2: #1b1f20;
+  --surface: #212627;
+  --surface-2: #1c2122;
+  --ink: #eef1ee;
+  --ink-2: #bcc4c0;
+  --muted: #8b9490;
+  --line: #313839;
+  --line-2: #3d4547;
+  --green: #7fc08d;
+  --green-ink: #a8d9b2;
+  --green-soft: #22322a;
+  --clay: #e79068;
+  --clay-soft: #33241d;
+  --amber: #d8a94a;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow: 0 2px 4px rgba(0,0,0,.3), 0 10px 26px -10px rgba(0,0,0,.55);
+  --shadow-lg: 0 28px 64px -20px rgba(0,0,0,.75), 0 2px 8px rgba(0,0,0,.4);
+}
+html[data-theme="dark"] .btn--primary { color: #102014; }
+html[data-theme="dark"] .pill { background: rgba(0,0,0,.22); }
+html[data-theme="dark"] .chip[aria-pressed="true"] { color: #102014; }
+html[data-theme="dark"] .item input[type="checkbox"]:checked::after { color: #102014; }
+
+/* Force light even on a dark-preference OS */
+html[data-theme="light"] {
+  color-scheme: light;
+  --paper: #faf6ef;
+  --paper-2: #f3ece1;
+  --surface: #ffffff;
+  --surface-2: #fbf8f3;
+  --ink: #1d211e;
+  --ink-2: #4a5350;
+  --muted: #7c8480;
+  --line: #e6ddcf;
+  --line-2: #d8ccb8;
+  --green: #2f5d3a;
+  --green-ink: #23492c;
+  --green-soft: #e6efe7;
+  --clay: #c1603b;
+  --clay-soft: #fbeae2;
+  --amber: #b8862b;
+  --shadow-sm: 0 1px 2px rgba(31,27,20,.05), 0 1px 3px rgba(31,27,20,.04);
+  --shadow: 0 2px 4px rgba(31,27,20,.05), 0 8px 24px -8px rgba(31,27,20,.12);
+  --shadow-lg: 0 24px 60px -18px rgba(31,27,20,.3), 0 2px 8px rgba(31,27,20,.06);
+}
+html[data-theme="light"] .btn--primary { color: #fff; }
+html[data-theme="light"] .pill { background: rgba(255,255,255,.22); }
+html[data-theme="light"] .chip[aria-pressed="true"] { color: #fff; }
+html[data-theme="light"] .item input[type="checkbox"]:checked::after { color: #fff; }
 
 /* ============================================================ motion pref */
 
