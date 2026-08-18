@@ -92,18 +92,6 @@ const qPlanIngredients = db.prepare(`
 const qPantry = db.prepare("SELECT name FROM pantry ORDER BY name");
 const qListState = db.prepare("SELECT item_key, checked FROM list_state WHERE week_start = ?");
 
-const qQuickShop = db.prepare(`
-  SELECT qs.id, qs.recipe_id, qs.servings,
-         r.name, r.emoji, r.minutes, r.servings AS base_servings
-  FROM quick_shop qs JOIN recipes r ON r.id = qs.recipe_id ORDER BY qs.id
-`);
-const qQuickShopIngredients = db.prepare(`
-  SELECT i.name AS ing, i.quantity, i.unit, i.aisle,
-         r.name AS recipe, qs.servings AS want, r.servings AS base
-  FROM quick_shop qs JOIN recipes r ON r.id = qs.recipe_id
-  JOIN ingredients i ON i.recipe_id = r.id
-`);
-
 function allRecipes() {
   const byId = new Map();
   for (const r of qRecipes.all()) {
@@ -140,8 +128,7 @@ function buildList(week) {
   const checked = new Map(qListState.all(week).map((r) => [r.item_key, !!r.checked]));
 
   const acc = new Map();
-  const allIngRows = [...qPlanIngredients.all(week), ...qQuickShopIngredients.all()];
-  for (const row of allIngRows) {
+  for (const row of qPlanIngredients.all(week)) {
     // Scale each ingredient by how many servings the cook actually planned.
     const scale = row.base > 0 ? row.want / row.base : 1;
     const unit = normalizeUnit(row.unit);
@@ -192,7 +179,6 @@ function buildList(week) {
     }));
 
   const plan = qPlan.all(week);
-  const quickShop = qQuickShop.all();
   return {
     weekStart: week,
     groups,
@@ -200,7 +186,6 @@ function buildList(week) {
     checkedCount: items.filter((i) => i.checked).length,
     mealCount: plan.length,
     recipeCount: new Set(plan.map((p) => p.recipe_id)).size,
-    quickShop,
     pantrySkipped: skipped.sort(),
     pantry: [...pantry].map(titleCase).sort(),
   };
@@ -483,39 +468,6 @@ function handleApi(method, url, body) {
     if (!name) return bad("name is required");
     db.prepare("DELETE FROM pantry WHERE name = ?").run(name);
     return json({ ok: true });
-  }
-
-  if (path === "/api/quick-shop" && method === "GET") {
-    return json({ entries: qQuickShop.all() });
-  }
-
-  if (path === "/api/quick-shop" && method === "POST") {
-    if (!body) return bad("invalid JSON body");
-    const recipe = qRecipeById.get(Number(body.recipeId));
-    if (!recipe) return bad("unknown recipe", 404);
-    const servings = clampServings(body.servings, recipe.servings);
-    const existing = db.prepare("SELECT id FROM quick_shop WHERE recipe_id = ?").get(recipe.id);
-    if (existing) {
-      db.prepare("UPDATE quick_shop SET servings = ? WHERE id = ?").run(servings, existing.id);
-      return json({ id: existing.id });
-    }
-    const row = db.prepare("INSERT INTO quick_shop (recipe_id, servings) VALUES (?, ?) RETURNING id")
-      .get(recipe.id, servings);
-    return json({ id: row.id }, 201);
-  }
-
-  if (path === "/api/quick-shop" && method === "DELETE") {
-    db.prepare("DELETE FROM quick_shop").run();
-    return json({ ok: true });
-  }
-
-  const qsMatch = path.match(/^\/api\/quick-shop\/(\d+)$/);
-  if (qsMatch) {
-    const id = Number(qsMatch[1]);
-    if (method === "DELETE") {
-      db.prepare("DELETE FROM quick_shop WHERE id = ?").run(id);
-      return json({ ok: true });
-    }
   }
 
   if (path === "/api/export" && method === "GET") {
