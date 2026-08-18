@@ -358,7 +358,7 @@ async function moveMeal(entryId, day, slot) {
 /* ------------------------------------------------------------------ picker */
 
 function openPicker(day, slot) {
-  state.pickerTarget = { day, slot };
+  state.pickerTarget = { day, slot, servingsMap: {} };
   const dialog = $("picker");
   const date = dayDate(state.weekStart, day);
   $("pickerTitle").textContent = `${slot[0].toUpperCase()}${slot.slice(1)} · ${date.toLocaleDateString(undefined, { weekday: "long" })}`;
@@ -369,7 +369,7 @@ function openPicker(day, slot) {
 }
 
 function renderPicker() {
-  const { slot } = state.pickerTarget || {};
+  const { slot, servingsMap } = state.pickerTarget || {};
   const q = $("pickerSearch").value.trim().toLowerCase();
   const host = $("pickerList");
   // Suggest recipes suited to this meal first, but never hide the rest.
@@ -389,12 +389,46 @@ function renderPicker() {
     return;
   }
   for (const recipe of pool) {
-    host.append(
-      recipeCard(recipe, async (picked) => {
-        $("picker").close();
-        await addMeal(picked.id, state.pickerTarget.day, state.pickerTarget.slot);
-      }),
-    );
+    if (!(recipe.id in servingsMap)) {
+      servingsMap[recipe.id] = state.defaultServings || 2;
+    }
+
+    const row = document.createElement("div");
+    row.className = "picker-row";
+
+    const card = recipeCard(recipe, async (picked) => {
+      $("picker").close();
+      await addMeal(picked.id, state.pickerTarget.day, state.pickerTarget.slot, servingsMap[picked.id]);
+    });
+
+    const qty = document.createElement("div");
+    qty.className = "picker-qty";
+
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.textContent = "−";
+    minus.setAttribute("aria-label", `Fewer servings of ${recipe.name}`);
+
+    const valueEl = document.createElement("span");
+    valueEl.textContent = String(servingsMap[recipe.id]);
+
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.textContent = "+";
+    plus.setAttribute("aria-label", `More servings of ${recipe.name}`);
+
+    const updateQty = (next) => {
+      const clamped = Math.min(24, Math.max(1, next));
+      servingsMap[recipe.id] = clamped;
+      valueEl.textContent = String(clamped);
+    };
+
+    minus.addEventListener("click", (e) => { e.stopPropagation(); updateQty(servingsMap[recipe.id] - 1); });
+    plus.addEventListener("click", (e) => { e.stopPropagation(); updateQty(servingsMap[recipe.id] + 1); });
+
+    qty.append(minus, valueEl, plus);
+    row.append(card, qty);
+    host.append(row);
   }
 }
 
