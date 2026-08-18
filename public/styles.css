@@ -591,6 +591,28 @@ body.is-holding .addslot {
   display: flex; flex-direction: column; gap: 7px;
 }
 
+.picker-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.picker-row .rcard { flex: 1; min-width: 0; width: auto; }
+
+.picker-qty {
+  display: inline-flex; align-items: center; flex: 0 0 auto;
+  border: 1px solid var(--line-2); border-radius: 999px;
+  background: var(--surface); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.picker-qty button {
+  width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer;
+  color: var(--ink-2); font-size: 15px; line-height: 1; display: grid; place-items: center;
+  transition: background .14s ease, color .14s ease;
+}
+.picker-qty button:hover { background: var(--green-soft); color: var(--green); }
+.picker-qty span {
+  min-width: 26px; text-align: center; font-size: 12.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+
 /* ================================================================= toasts */
 
 .toasts {
