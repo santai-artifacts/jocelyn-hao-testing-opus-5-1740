@@ -599,8 +599,7 @@ body.is-holding .addslot {
 .picker-qty {
   display: inline-flex; align-items: center; flex: 0 0 auto;
   border: 1px solid var(--line-2); border-radius: 999px;
-  background: var(--surface); overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  background: var(--surface); overflow: hidden; box-shadow: var(--shadow-sm);
 }
 .picker-qty button {
   width: 28px; height: 28px; border: 0; background: transparent; cursor: pointer;
