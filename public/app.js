@@ -389,7 +389,9 @@ function renderPicker() {
     return;
   }
   for (const recipe of pool) {
-    if (!(recipe.id in servingsMap)) servingsMap[recipe.id] = state.defaultServings || 2;
+    if (!(recipe.id in servingsMap)) {
+      servingsMap[recipe.id] = state.defaultServings || 2;
+    }
 
     const row = document.createElement("div");
     row.className = "picker-row";
@@ -797,10 +799,6 @@ function wireChrome() {
     }
   });
 
-  $("themeToggle").addEventListener("click", () => {
-    applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
-  });
-
   $("holdCancel").addEventListener("click", clearHold);
   $("pickerClose").addEventListener("click", () => $("picker").close());
   $("pickerSearch").addEventListener("input", renderPicker);
@@ -812,34 +810,9 @@ function wireChrome() {
   });
 }
 
-/* ------------------------------------------------------------------- theme */
-
-function applyTheme(theme, save) {
-  document.documentElement.dataset.theme = theme;
-  const btn = $("themeToggle");
-  if (theme === "dark") {
-    btn.textContent = "☀";
-    btn.setAttribute("aria-label", "Switch to light mode");
-  } else {
-    btn.textContent = "☽";
-    btn.setAttribute("aria-label", "Switch to dark mode");
-  }
-  if (save) {
-    try { localStorage.setItem("theme", theme); } catch { /* sandboxed */ }
-  }
-}
-
-function initTheme() {
-  let stored;
-  try { stored = localStorage.getItem("theme"); } catch { /* sandboxed */ }
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(stored || (prefersDark ? "dark" : "light"), false);
-}
-
 /* -------------------------------------------------------------------- boot */
 
 (async function start() {
-  initTheme();
   wireChrome();
   try {
     const boot = await api("/api/bootstrap");
