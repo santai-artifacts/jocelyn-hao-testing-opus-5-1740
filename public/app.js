@@ -330,8 +330,9 @@ async function onSlotClick(day, slot) {
   openPicker(day, slot);
 }
 
-async function addMeal(recipeId, day, slot) {
+async function addMeal(recipeId, day, slot, servings) {
   const recipe = state.recipes.find((r) => r.id === recipeId);
+  const s = servings ?? state.defaultServings ?? (recipe ? recipe.servings : 2);
   await mutate(() =>
     api("/api/plan", {
       method: "POST",
@@ -340,7 +341,7 @@ async function addMeal(recipeId, day, slot) {
         day,
         slot,
         recipeId,
-        servings: state.defaultServings || (recipe ? recipe.servings : 2),
+        servings: s,
       }),
     }),
   );
